@@ -50,8 +50,12 @@ func main() {
 		origStdin := os.Stdin
 		origStdout := os.Stdout
 		rIn, wIn, _ := os.Pipe()
-		wIn.Write(input)
-		wIn.Close()
+
+		go func() {
+			defer wIn.Close()
+			wIn.Write(input)
+		}()
+
 		os.Stdin = rIn
 		rOut, wOut, _ := os.Pipe()
 		os.Stdout = wOut
@@ -160,7 +164,7 @@ MAIN_LOOP:
 		for w := range m + 1 {
 
 			if 1 <= w && 1 <= h {
-				for y := range n - h - h - 1 + 1 {
+				for y := range n - h - h {
 					for x := range m - w - h - h + 1 {
 
 						passed_chars := 0

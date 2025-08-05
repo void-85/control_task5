@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,11 +19,11 @@ const (
 
 func main() {
 
-	fmt.Printf("\n\033[33m[ STARTED ]\n")
+	log.Printf("\033[33m[ STARTED ]")
 
 	test_input_files, err := filepath.Glob(filepath.Join(test_dir, "*"))
 	if err != nil {
-		fmt.Printf("\033[31mfailed to list input files: %v", err)
+		log.Printf("\033[31mfailed to list input files: %v", err)
 	}
 
 	for _, in_file := range test_input_files {
@@ -32,50 +33,91 @@ func main() {
 			continue
 		}
 
-		fmt.Printf("\033[37mtesting file \"%s\"\n", in_file)
+		log.Printf("\033[37mtesting file \"%s\"\n", in_file)
 		out_file := in_file + ".a"
 
 		input, err := os.ReadFile(in_file)
 		if err != nil {
-			fmt.Printf("\033[31mfailed to read input file %s: %v\n", in_file, err)
+			log.Printf("\033[31mfailed to read input file %s: %v\n", in_file, err)
 			continue
 		}
 
-		expectedOutput, err := os.ReadFile(out_file)
+		output, err := os.ReadFile(out_file)
 		if err != nil {
-			fmt.Printf("\033[31mfailed to read output file %s: %v\n", out_file, err)
+			log.Printf("\033[31mfailed to read output file %s: %v\n", out_file, err)
 			continue
 		}
 
-		origStdin := os.Stdin
-		origStdout := os.Stdout
-		rIn, wIn, _ := os.Pipe()
-		wIn.Write(input)
-		wIn.Close()
-		os.Stdin = rIn
-		rOut, wOut, _ := os.Pipe()
-		os.Stdout = wOut
-		start := time.Now()
+		std__in := os.Stdin
+		std_out := os.Stdout
+		read_in_pipe, write_in_pipe, _ := os.Pipe()
+
+		go func() {
+			defer write_in_pipe.Close()
+			write_in_pipe.Write(input)
+		}()
+
+		os.Stdin = read_in_pipe
+		read_out_pipe, write_out_pipe, _ := os.Pipe()
+		os.Stdout = write_out_pipe
+		start_time := time.Now()
+
 		test_func()
-		wOut.Close()
-		duration := time.Since(start)
+
+		write_out_pipe.Close()
+		time_elapsed := time.Since(start_time)
 		var buf bytes.Buffer
-		io.Copy(&buf, rOut)
-		os.Stdin = origStdin
-		os.Stdout = origStdout
+		io.Copy(&buf, read_out_pipe)
+		os.Stdin = std__in
+		os.Stdout = std_out
 
-		actualOutput := strings.TrimSpace(buf.String())
-		expected := strings.TrimSpace(string(expectedOutput))
+		actual_output := strings.TrimSpace(buf.String())
+		expected_output := strings.TrimSpace(string(output))
 
-		if actualOutput != expected {
-			fmt.Printf("\n\033[31mFAILED %s (worked %s)\nExpected:\n%s\n--------------------------------------------------------------\nGot:\n%s\n", in_file, duration, expected, actualOutput)
+		if actual_output != expected_output {
+
+			actual_output_splitted := strings.Split(actual_output, "\n")
+			expected_output_splitted := strings.Split(string(output), "\n")
+
+			log.Printf("\033[31mFAILED %s (worked %s)\033[34m", in_file, time_elapsed)
+			log.Printf("\033[35mEXP\tACT\tLINE #\033[34m")
+			for i := range int(math.Max(float64(len(actual_output_splitted)), float64(len(expected_output_splitted)))) {
+
+				a, b, color := "", "", ""
+				if i < len(expected_output_splitted) {
+					a = expected_output_splitted[i]
+				}
+				if i < len(actual_output_splitted) {
+					b = actual_output_splitted[i]
+				}
+
+				if a == b {
+					color = "\033[32m"
+				} else {
+					color = "\033[31m"
+				}
+
+				if a != "" && b != "" {
+					log.Printf("%s%s\t%s\t(#%d)\033[34m", color, a, b, i+1)
+				}
+			}
+
+			/* if len(actual_output_splitted) == len(expected_output_splitted) {
+				log.Printf("\n\033[31mFAILED %s (worked %s):", time_elapsed)
+				for i := range len(actual_output_splitted) {
+					log.Printf("%s\t\t<-must be--\t\t%s", actual_output_splitted[i], expected_output_splitted[i])
+				}
+			} else {
+				log.Printf("\n\033[31mFAILED %s (worked %s)\nExpected:\n%s\nGot:\n%s\n", in_file, time_elapsed, expected_output, actual_output)
+			} */
+
 		} else {
-			fmt.Printf("\033[32mPASSED %s 	(worked %s)\n", in_file, duration)
+			log.Printf("\033[32mPASSED %s 	(worked %s)\n", in_file, time_elapsed)
 		}
 
 	}
 
-	fmt.Printf("\033[33m[ FINISHED ]\n\n")
+	log.Printf("\033[33m[ FINISHED ]\n\n")
 }
 
 func test_func() {
@@ -96,9 +138,9 @@ func test_func() {
 
 		//log.Printf("n== %d m == %d\n", n, m)
 
-		table := make([][]byte, n)
+		char_table := make([][]byte, n)
 		for i := range n {
-			table[i] = make([]byte, m)
+			char_table[i] = make([]byte, m)
 		}
 
 		// adding data to table
@@ -111,7 +153,7 @@ func test_func() {
 
 				//log.Printf("reading (%d;%d)\n", y, x)
 
-				table[y][x] = chars[x]
+				char_table[y][x] = chars[x]
 			}
 		}
 
@@ -130,27 +172,52 @@ func test_func() {
 				} else if y == y2-1 && x == x2-1 {
 					s += "T" + " "
 				} else {
-					s += string(table[y][x]) + " "
+					s += string(char_table[y][x]) + " "
 				}
 			}
 			s += "\n"
 		}
-
 		log.Printf("-------------------------------------\nN == %d   M == %d\nloaded table:\n%s\nCHECK PATH: (%d;%d) --> (%d;%d)", n, m, s, y1, x1, y2, x2)
 
-		first_hex_skipped, hex_height, hex_width := get_hexagon_height_width(&table, n, m)
+		if y1 == y2 && x1 == x2 {
+			log.Printf("same coords ==> inside same hex, breaking dataset computations...")
+			fmt.Fprintf(out, "0\n")
+		} else {
 
-		num_of_y_hexes := (n - 1) / (hex_height + hex_height)
-		num_of_x_hexes := (m - hex_height) / (hex_height + hex_width)
+			first_hex_skipped, hex_height, hex_width := get_hexagon_height_width(&char_table, n, m)
 
-		log.Printf("reading %d x %d hex field (first hex is skipped : %t)", num_of_y_hexes, num_of_x_hexes, first_hex_skipped)
+			num_of_y_hexes := (n - 1) / (hex_height + hex_height)
+			num_of_x_hexes := (m - hex_height) / (hex_height + hex_width)
 
+			table := make([][]byte, num_of_y_hexes*2)
+			for i := range num_of_y_hexes * 2 {
+				table[i] = make([]byte, num_of_x_hexes)
+			}
+
+			for i := range num_of_y_hexes * 2 {
+				for j := range num_of_x_hexes {
+					table[i][j] = ' '
+				}
+			}
+
+			log.Printf("reading %d x %d hex field (first hex is skipped : %t)", num_of_y_hexes, num_of_x_hexes, first_hex_skipped)
+
+			map_hex_table(&table, num_of_y_hexes*2, num_of_x_hexes, &char_table, first_hex_skipped)
+
+			fmt.Fprintf(out, "9999\n")
+		}
 	}
 
-	fmt.Fprintf(out, "%s\n", "asd")
+	//fmt.Fprintf(out, "%s\n", "0\n2\n2\n5")
 }
 
-func get_hexagon_height_width(table *[][]byte, n, m int) (first_hex_skipped bool, height, width int) {
+func map_hex_table(table *[][]byte, h, w int, char_table *[][]byte, first_hex_skipped bool) {
+
+	//for
+
+}
+
+func get_hexagon_height_width(char_table *[][]byte, n, m int) (first_hex_skipped bool, height, width int) {
 
 	first_hex_skipped = false
 	log.Printf("examining table %dx%d", n, m)
@@ -170,7 +237,7 @@ MAIN_LOOP:
 						//-----------------------------------------
 						passed_chars = 0
 						for i := range w {
-							if (*table)[y][x+h+i] == '_' && (*table)[y+h+h][x+h+i] == '_' {
+							if (*char_table)[y][x+h+i] == '_' && (*char_table)[y+h+h][x+h+i] == '_' {
 								passed_chars++
 							}
 						}
@@ -183,7 +250,7 @@ MAIN_LOOP:
 						//-----------------------------------------
 						passed_chars = 0
 						for i := range h {
-							if (*table)[y+h-i][x+i] == '/' && (*table)[y+h+i+1][x+i] == '\\' {
+							if (*char_table)[y+h-i][x+i] == '/' && (*char_table)[y+h+i+1][x+i] == '\\' {
 								passed_chars++
 							}
 						}
@@ -196,7 +263,7 @@ MAIN_LOOP:
 						//-----------------------------------------
 						passed_chars = 0
 						for i := range h {
-							if (*table)[y+h+h-i][x+h+i+w] == '/' && (*table)[y+1+i][x+h+i+w] == '\\' {
+							if (*char_table)[y+h+h-i][x+h+i+w] == '/' && (*char_table)[y+1+i][x+h+i+w] == '\\' {
 								passed_chars++
 							}
 						}
@@ -229,9 +296,9 @@ MAIN_LOOP:
 	}
 
 	if height == 0 && width == 0 {
-		log.Printf("searching upto h==%d w==%d failed", n, m)
+		log.Printf("hex size not found!")
 	} else {
-		log.Printf("h==%d w==%d PASSED", height, width)
+		log.Printf("h==%d w==%d hex size found", height, width)
 	}
 
 	return first_hex_skipped, height, width

@@ -17,6 +17,10 @@ const (
 	test_dir = "tests"
 )
 
+var(
+	already_sailed = false
+)
+
 func main() {
 
 	log.Printf("\033[33m[ STARTED ]")
@@ -132,6 +136,8 @@ func test_func() {
 	//log.Printf("there are %d datasets\n", datasets)
 
 	for range datasets {
+
+		already_sailed = false
 
 		var n, m int
 		fmt.Fscanln(inp, &n, &m)
@@ -291,6 +297,30 @@ func spread_from_point(
 	non_replacable_found_at_y,
 	non_replacable_found_at_x int,
 ) {
+
+	// border of map reached
+	if (replace_what=='~') && (from_y <= 0 || from_x <= 0 || from_y >= table_height-1 || from_x >= table_width-1) {
+	
+		if !already_sailed{
+
+			for i := range table_height {
+				for j := range table_width {
+					if i == 1 || j == 1 || i == table_height-2 || j == table_width-2 {
+						if (*table)[i][j] == '~' {
+
+							if found
+
+						}
+					}
+				}
+			}	
+
+		}else{
+
+			return false, -1,-1
+
+		}
+	}
 
 	return destination_found,
 		non_replacable_found_at_y,

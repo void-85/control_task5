@@ -206,7 +206,7 @@ func test_func() {
 			}
 			for i := range num_of_y_hexes * 2 {
 				for j := range num_of_x_hexes {
-					table[i][j] = '.'
+					table[i][j] = ' '
 				}
 			}
 
@@ -235,15 +235,6 @@ func test_func() {
 
 func map_hex_table(table *[][]byte, total_y_hexes, total_x_hexes, hex_h, hex_w int, char_table *[][]byte, first_hex_skipped bool) (found_src_dst_in_one_hex bool) {
 
-	/* // table params according to first _hex_skipped
-	start_y_shift := 0
-	order_y_shift := +1
-
-	if first_hex_skipped{
-		start_y_shift := 1
-		order_y_shift := -1
-	} */
-
 	for y := range total_y_hexes / 2 {
 		for x := range total_x_hexes {
 
@@ -266,9 +257,23 @@ func map_hex_table(table *[][]byte, total_y_hexes, total_x_hexes, hex_h, hex_w i
 				return true
 			}
 
+			setting_char := 'G'
 			if is_ground {
-				//sd
+
+				if num_of_src_dst_points == 1 {
+					setting_char = 'X'
+				}
+
+			} else {
+				setting_char = '~'
 			}
+
+			lower_shift := 0
+			if lower_position {
+				lower_shift = 1
+			}
+
+			(*table)[y*2+lower_shift][x] = byte(setting_char)
 		}
 	}
 

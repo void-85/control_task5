@@ -200,40 +200,129 @@ func test_func() {
 
 			log.Printf("reading %d x %d hex field (first hex is skipped : %t)", num_of_y_hexes, num_of_x_hexes, first_hex_skipped)
 
-			table := make([][]byte, num_of_y_hexes*2)
-			for i := range num_of_y_hexes * 2 {
-				table[i] = make([]byte, num_of_x_hexes)
+			table_height := num_of_y_hexes*2 + 2
+			table_width := num_of_x_hexes + 2
+
+			table := make([][]byte, table_height)
+			for i := range table_height {
+				table[i] = make([]byte, table_width)
 			}
-			for i := range num_of_y_hexes * 2 {
-				for j := range num_of_x_hexes {
+			for i := range table_height {
+				for j := range table_width {
 					table[i][j] = ' '
+
+					if i == 0 || j == 0 || i == table_height-1 || j == table_width-1 {
+						table[i][j] = '~'
+					}
 				}
 			}
 
-			if map_hex_table(&table, num_of_y_hexes*2, num_of_x_hexes, hex_height, hex_width, &char_table, first_hex_skipped) {
+			found_src_dst_in_one_hex,
+				spread_start_y,
+				spread_start_x :=
+				map_hex_table(&table, num_of_y_hexes*2, num_of_x_hexes, hex_height, hex_width, &char_table, first_hex_skipped)
+
+			if found_src_dst_in_one_hex {
 				log.Printf("src & dst inside same hex, breaking dataset computations...")
 				fmt.Fprintf(out, "0\n")
 			}
 
-			//---- PRINT table --------------------------------------------------
-			s = ""
-			for i := range num_of_y_hexes * 2 {
-				for j := range num_of_x_hexes {
-					s += string(table[i][j]) + "  "
-				}
-				s += "\n"
-			}
-			log.Printf("\nloaded table:\n%s", s)
-			//---- PRINT table --------------------------------------------------
+			log.Printf(
+				"starting spreading from (%d;%d)",
+				spread_start_y,
+				spread_start_x,
+			)
 
-			fmt.Fprintf(out, "9999\n")
+			table[spread_start_y][spread_start_x] = '*'
+			print_table(&table, table_height, table_width)
+
+			element_borders_reached := 0
+			destination_found := false
+
+			var spread_over byte = 'G'
+
+		SPREAD_LOOP:
+			for {
+
+				destination_found,
+					spread_start_y,
+					spread_start_x =
+					spread_from_point(
+						&table,
+						table_height,
+						table_width,
+						spread_start_y,
+						spread_start_x,
+						spread_over,
+						'*',
+					)
+
+				if destination_found {
+					log.Printf("REACHED DESTINATION with %d borders crossed\n", element_borders_reached)
+					fmt.Fprintf(out, "%d\n", element_borders_reached)
+					break SPREAD_LOOP
+				}
+
+				element_borders_reached++
+				if spread_over == 'G' {
+					spread_over = '~'
+				} else {
+					spread_over = 'G'
+				}
+			}
+
+			//fmt.Fprintf(out, "9999\n")
 		}
 	}
 
 	//fmt.Fprintf(out, "%s\n", "0\n2\n2\n5")
 }
 
-func map_hex_table(table *[][]byte, total_y_hexes, total_x_hexes, hex_h, hex_w int, char_table *[][]byte, first_hex_skipped bool) (found_src_dst_in_one_hex bool) {
+func spread_from_point(
+	table *[][]byte,
+	table_height,
+	table_width,
+	from_y,
+	from_x int,
+	replace_what,
+	replace_with byte,
+) (
+	destination_found bool,
+	non_replacable_found_at_y,
+	non_replacable_found_at_x int,
+) {
+
+	return destination_found,
+		non_replacable_found_at_y,
+		non_replacable_found_at_x
+}
+
+func print_table(table *[][]byte, table_height, table_width int) {
+
+	s := ""
+	for i := range table_height {
+		for j := range table_width {
+			s += string((*table)[i][j]) + ""
+		}
+		s += "\n"
+	}
+	log.Printf("\nloaded table:\n%s", s)
+
+}
+
+func map_hex_table(
+	table *[][]byte,
+	total_y_hexes,
+	total_x_hexes,
+	hex_h,
+	hex_w int,
+	char_table *[][]byte,
+	first_hex_skipped bool,
+) (
+	found_src_dst_in_one_hex bool,
+	spread_start_y,
+	spread_start_x int,
+) {
 
 	for y := range total_y_hexes / 2 {
 		for x := range total_x_hexes {
@@ -254,18 +343,7 @@ func map_hex_table(table *[][]byte, total_y_hexes, total_x_hexes, hex_h, hex_w i
 				)
 
 			if num_of_src_dst_points == 2 {
-				return true
-			}
-
-			setting_char := 'G'
-			if is_ground {
-
-				if num_of_src_dst_points == 1 {
-					setting_char = 'X'
-				}
-
-			} else {
-				setting_char = '~'
+				return true, 0, 0
 			}
 
 			lower_shift := 0
@@ -273,11 +351,24 @@ func map_hex_table(table *[][]byte, total_y_hexes, total_x_hexes, hex_h, hex_w i
 				lower_shift = 1
 			}
 
-			(*table)[y*2+lower_shift][x] = byte(setting_char)
+			setting_char := 'G'
+			if is_ground {
+
+				if num_of_src_dst_points == 1 {
+					setting_char = 'X'
+					spread_start_y = y*2 + lower_shift + 1
+					spread_start_x = x + 1
+				}
+
+			} else {
+				setting_char = '~'
+			}
+
+			(*table)[y*2+lower_shift+1][x+1] = byte(setting_char)
 		}
 	}
 
-	return false
+	return false, spread_start_y, spread_start_x
 }
 
 func test_coords_for_ground_hex_and_check_for_src_dst(

@@ -189,7 +189,7 @@ func test_func() {
 		//---- PRINT char_table --------------------------------------------------
 
 		if y1 == y2 && x1 == x2 {
-			log.Printf("same coords ==> inside same hex, breaking dataset computations...")
+			log.Printf("same coords inside same hex, breaking dataset computations...")
 			fmt.Fprintf(out, "0\n")
 		} else {
 
@@ -210,10 +210,12 @@ func test_func() {
 				}
 			}
 
-			map_hex_table(&table, num_of_y_hexes*2, num_of_x_hexes, hex_height, hex_width, &char_table, first_hex_skipped)
+			if map_hex_table(&table, num_of_y_hexes*2, num_of_x_hexes, hex_height, hex_width, &char_table, first_hex_skipped) {
+				log.Printf("src & dst inside same hex, breaking dataset computations...")
+				fmt.Fprintf(out, "0\n")
+			}
 
 			//---- PRINT table --------------------------------------------------
-
 			s = ""
 			for i := range num_of_y_hexes * 2 {
 				for j := range num_of_x_hexes {
@@ -231,7 +233,7 @@ func test_func() {
 	//fmt.Fprintf(out, "%s\n", "0\n2\n2\n5")
 }
 
-func map_hex_table(table *[][]byte, total_y_hexes, total_x_hexes, hex_h, hex_w int, char_table *[][]byte, first_hex_skipped bool) {
+func map_hex_table(table *[][]byte, total_y_hexes, total_x_hexes, hex_h, hex_w int, char_table *[][]byte, first_hex_skipped bool) (found_src_dst_in_one_hex bool) {
 
 	/* // table params according to first _hex_skipped
 	start_y_shift := 0
@@ -250,19 +252,27 @@ func map_hex_table(table *[][]byte, total_y_hexes, total_x_hexes, hex_h, hex_w i
 				lower_position = !lower_position
 			}
 
-			//is_ground, num_of_src_dst_points :=
-			test_coords_for_ground_hex_and_check_for_src_dst(
-				char_table,
-				y,
-				x,
-				hex_h,
-				hex_w,
-				lower_position,
-			)
+			is_ground, num_of_src_dst_points :=
+				test_coords_for_ground_hex_and_check_for_src_dst(
+					char_table,
+					y,
+					x,
+					hex_h,
+					hex_w,
+					lower_position,
+				)
 
+			if num_of_src_dst_points == 2 {
+				return true
+			}
+
+			if is_ground {
+				//sd
+			}
 		}
 	}
 
+	return false
 }
 
 func test_coords_for_ground_hex_and_check_for_src_dst(
@@ -342,11 +352,14 @@ func test_coords_for_ground_hex_and_check_for_src_dst(
 			passed_chars++
 		}
 
-		if (*ct)[ct_y+hex_h+hex_h-i][ct_x+hex_h+i+hex_w] == '/' && (*ct)[ct_y+1+i][ct_x+hex_h+i+hex_w] == '\\' {
+		if (*ct)[ct_y+hex_h-i][ct_x+hex_h+hex_h+hex_w-i-1] == '\\' && (*ct)[ct_y+hex_h+i+1][ct_x+hex_h+hex_h+hex_w-i-1] == '/' {
 			passed_chars++
 		}
 
-		log.Printf(
+		/*if (*ct)[ct_y+hex_h+hex_h-i][ct_x+hex_h+i+hex_w] == '/' && (*ct)[ct_y+1+i][ct_x+hex_h+i+hex_w] == '\\' {
+			passed_chars++
+		} */
+		/*log.Printf(
 			"edges check coords: (%d;%d) (%d;%d) \033[32m(%d;%d) (%d;%d)\033[35m(%d;%d) (%d;%d)",
 			ct_y+hex_h-i,
 			ct_x+i,
@@ -362,7 +375,17 @@ func test_coords_for_ground_hex_and_check_for_src_dst(
 			ct_x+hex_h+hex_h+hex_w-i-1,
 			ct_y+hex_h+i+1,
 			ct_x+hex_h+hex_h+hex_w-i-1,
-		)
+		) */
+
+		for j := ct_x + i + 1; j < ct_x+hex_h+hex_h+hex_w-i-1; j++ {
+			if (*ct)[ct_y+hex_h-i][j] == 'X' {
+				num_of_src_dst_points++
+			}
+
+			if (*ct)[ct_y+hex_h+i+1][j] == 'X' {
+				num_of_src_dst_points++
+			}
+		}
 	}
 
 	if passed_chars == 2*hex_h {
@@ -375,7 +398,7 @@ func test_coords_for_ground_hex_and_check_for_src_dst(
 	}
 	//----------------------------------------------------------------------------
 
-	log.Printf(
+	/*log.Printf(
 		"testing table(%d;%d) --> char_table(%d, %d)(is lower: %t) \t==> is ground:%t\tPOINTS:%d",
 		test_y,
 		test_x,
@@ -384,7 +407,7 @@ func test_coords_for_ground_hex_and_check_for_src_dst(
 		lower_position,
 		is_ground,
 		num_of_src_dst_points,
-	)
+	) */
 
 	return is_ground, num_of_src_dst_points
 }

@@ -161,23 +161,32 @@ func test_func() {
 		fmt.Fscanln(inp, &y1, &x1)
 		fmt.Fscanln(inp, &y2, &x2)
 
+		if y1 == y2 && x1 == x2 {
+			char_table[y1-1][x1-1] = 'B'
+		} else {
+			char_table[y1-1][x1-1] = 'X'
+			char_table[y2-1][x2-1] = 'X'
+		}
+
+		//---- PRINT char_table --------------------------------------------------
 		s := ""
 		for y := range n {
 
 			for x := range m {
-				if y == y1-1 && x == x1-1 && y == y2-1 && x == x2-1 {
+				/* if y == y1-1 && x == x1-1 && y == y2-1 && x == x2-1 {
 					s += "B" + " "
 				} else if y == y1-1 && x == x1-1 {
 					s += "F" + " "
 				} else if y == y2-1 && x == x2-1 {
 					s += "T" + " "
-				} else {
-					s += string(char_table[y][x]) + " "
-				}
+				} else { */
+				s += string(char_table[y][x]) + " "
+				//}
 			}
 			s += "\n"
 		}
-		log.Printf("-------------------------------------\nN == %d   M == %d\nloaded table:\n%s\nCHECK PATH: (%d;%d) --> (%d;%d)", n, m, s, y1, x1, y2, x2)
+		log.Printf("-------------------------------------\nN == %d   M == %d\nloaded char_table:\n%s\nCHECK PATH: (%d;%d) --> (%d;%d)", n, m, s, y1, x1, y2, x2)
+		//---- PRINT char_table --------------------------------------------------
 
 		if y1 == y2 && x1 == x2 {
 			log.Printf("same coords ==> inside same hex, breaking dataset computations...")
@@ -189,20 +198,31 @@ func test_func() {
 			num_of_y_hexes := (n - 1) / (hex_height + hex_height)
 			num_of_x_hexes := (m - hex_height) / (hex_height + hex_width)
 
+			log.Printf("reading %d x %d hex field (first hex is skipped : %t)", num_of_y_hexes, num_of_x_hexes, first_hex_skipped)
+
 			table := make([][]byte, num_of_y_hexes*2)
 			for i := range num_of_y_hexes * 2 {
 				table[i] = make([]byte, num_of_x_hexes)
 			}
-
 			for i := range num_of_y_hexes * 2 {
 				for j := range num_of_x_hexes {
-					table[i][j] = ' '
+					table[i][j] = '.'
 				}
 			}
 
-			log.Printf("reading %d x %d hex field (first hex is skipped : %t)", num_of_y_hexes, num_of_x_hexes, first_hex_skipped)
+			map_hex_table(&table, num_of_y_hexes*2, num_of_x_hexes, hex_height, hex_width, &char_table, first_hex_skipped)
 
-			map_hex_table(&table, num_of_y_hexes*2, num_of_x_hexes, &char_table, first_hex_skipped)
+			//---- PRINT table --------------------------------------------------
+
+			s = ""
+			for i := range num_of_y_hexes * 2 {
+				for j := range num_of_x_hexes {
+					s += string(table[i][j]) + "  "
+				}
+				s += "\n"
+			}
+			log.Printf("\nloaded table:\n%s", s)
+			//---- PRINT table --------------------------------------------------
 
 			fmt.Fprintf(out, "9999\n")
 		}
@@ -211,10 +231,162 @@ func test_func() {
 	//fmt.Fprintf(out, "%s\n", "0\n2\n2\n5")
 }
 
-func map_hex_table(table *[][]byte, h, w int, char_table *[][]byte, first_hex_skipped bool) {
+func map_hex_table(table *[][]byte, total_y_hexes, total_x_hexes, hex_h, hex_w int, char_table *[][]byte, first_hex_skipped bool) {
 
-	//for
+	/* // table params according to first _hex_skipped
+	start_y_shift := 0
+	order_y_shift := +1
 
+	if first_hex_skipped{
+		start_y_shift := 1
+		order_y_shift := -1
+	} */
+
+	for y := range total_y_hexes / 2 {
+		for x := range total_x_hexes {
+
+			lower_position := (x%2 == 1)
+			if first_hex_skipped {
+				lower_position = !lower_position
+			}
+
+			//is_ground, num_of_src_dst_points :=
+			test_coords_for_ground_hex_and_check_for_src_dst(
+				char_table,
+				y,
+				x,
+				hex_h,
+				hex_w,
+				lower_position,
+			)
+
+		}
+	}
+
+}
+
+func test_coords_for_ground_hex_and_check_for_src_dst(
+	ct *[][]byte,
+	test_y,
+	test_x,
+	hex_h,
+	hex_w int,
+	lower_position bool,
+) (
+	is_ground bool,
+	num_of_src_dst_points int,
+) {
+
+	ct_y := test_y * (hex_h + hex_h)
+	ct_x := test_x * (hex_h + hex_w)
+
+	if lower_position {
+		ct_y += hex_h
+	}
+
+	// CRITICAL EDGE CASE - NO LOWER HEXES IN CHAR_TABLE but trying to move over the boundaries
+	if ct_y+hex_h+hex_h >= len(*ct) {
+		return false, 0
+	}
+
+	//----------------------------------------------------------------------------
+	passed_chars := 0
+	passed_lines := 0
+
+	// H line TOP+BOTTOM
+	//-----------------------------------------
+	passed_chars = 0
+	for i := range hex_w {
+		if (*ct)[ct_y][ct_x+hex_h+i] == '_' && (*ct)[ct_y+hex_h+hex_h][ct_x+hex_h+i] == '_' {
+			passed_chars++
+		}
+	}
+	if passed_chars == hex_w {
+		passed_lines += 2
+	}
+	//-----------------------------------------
+
+	/* 	// DIAG line LEFT TOP+BOTTOM
+	   	//-----------------------------------------
+	   	passed_chars = 0
+	   	for i := range hex_h {
+	   		if (*char_table)[char_table_y+hex_h-i][char_table_x+i] == '/' && (*char_table)[char_table_y+hex_h+i+1][char_table_x+i] == '\\' {
+	   			passed_chars++
+	   		}
+	   	}
+	   	if passed_chars == hex_h {
+	   		passed_lines += 2
+	   	}
+	   	//-----------------------------------------
+
+	   	// DIAG line RIGHT BOTTOM+TOP
+	   	//-----------------------------------------
+	   	passed_chars = 0
+	   	for i := range hex_h {
+	   		if (*char_table)[char_table_y+hex_h+hex_h-i][char_table_x+hex_h+i+hex_w] == '/' && (*char_table)[char_table_y+1+i][char_table_x+hex_h+i+hex_w] == '\\' {
+	   			passed_chars++
+	   		}
+	   	}
+	   	if passed_chars == hex_h {
+	   		passed_lines += 2
+	   	}
+	   	//-----------------------------------------
+	*/
+
+	// DIAG line LEFT TOP+BOTTOM + RIGHT BOTTOM+TOP
+	//-----------------------------------------
+	passed_chars = 0
+	for i := range hex_h {
+
+		if (*ct)[ct_y+hex_h-i][ct_x+i] == '/' && (*ct)[ct_y+hex_h+i+1][ct_x+i] == '\\' {
+			passed_chars++
+		}
+
+		if (*ct)[ct_y+hex_h+hex_h-i][ct_x+hex_h+i+hex_w] == '/' && (*ct)[ct_y+1+i][ct_x+hex_h+i+hex_w] == '\\' {
+			passed_chars++
+		}
+
+		log.Printf(
+			"edges check coords: (%d;%d) (%d;%d) \033[32m(%d;%d) (%d;%d)\033[35m(%d;%d) (%d;%d)",
+			ct_y+hex_h-i,
+			ct_x+i,
+			ct_y+hex_h+i+1,
+			ct_x+i,
+
+			ct_y+hex_h+hex_h-i,
+			ct_x+hex_h+i+hex_w,
+			ct_y+1+i,
+			ct_x+hex_h+i+hex_w,
+
+			ct_y+hex_h-i,
+			ct_x+hex_h+hex_h+hex_w-i-1,
+			ct_y+hex_h+i+1,
+			ct_x+hex_h+hex_h+hex_w-i-1,
+		)
+	}
+
+	if passed_chars == 2*hex_h {
+		passed_lines += 4
+	}
+	//-----------------------------------------
+
+	if passed_lines == 6 {
+		is_ground = true
+	}
+	//----------------------------------------------------------------------------
+
+	log.Printf(
+		"testing table(%d;%d) --> char_table(%d, %d)(is lower: %t) \t==> is ground:%t\tPOINTS:%d",
+		test_y,
+		test_x,
+		ct_y,
+		ct_x,
+		lower_position,
+		is_ground,
+		num_of_src_dst_points,
+	)
+
+	return is_ground, num_of_src_dst_points
 }
 
 func get_hexagon_height_width(char_table *[][]byte, n, m int) (first_hex_skipped bool, height, width int) {

@@ -17,8 +17,14 @@ const (
 	test_dir = "tests"
 )
 
-var(
-	already_sailed = false
+var (
+	already_sailed               = false
+	destination_found            = false
+	spread_start_y               = -1
+	spread_start_x               = -1
+	element_borders_reached      = 0
+	replace_what            byte = '_'
+	replace_with            byte = '_'
 )
 
 func main() {
@@ -135,9 +141,8 @@ func test_func() {
 
 	//log.Printf("there are %d datasets\n", datasets)
 
+DATASETS_LOOP:
 	for range datasets {
-
-		already_sailed = false
 
 		var n, m int
 		fmt.Fscanln(inp, &n, &m)
@@ -197,88 +202,84 @@ func test_func() {
 		if y1 == y2 && x1 == x2 {
 			log.Printf("same coords inside same hex, breaking dataset computations...")
 			fmt.Fprintf(out, "0\n")
-		} else {
+			continue DATASETS_LOOP
+		}
 
-			first_hex_skipped, hex_height, hex_width := get_hexagon_height_width(&char_table, n, m)
+		first_hex_skipped, hex_height, hex_width := get_hexagon_height_width(&char_table, n, m)
 
-			num_of_y_hexes := (n - 1) / (hex_height + hex_height)
-			num_of_x_hexes := (m - hex_height) / (hex_height + hex_width)
+		num_of_y_hexes := (n - 1) / (hex_height + hex_height)
+		num_of_x_hexes := (m - hex_height) / (hex_height + hex_width)
 
-			log.Printf("reading %d x %d hex field (first hex is skipped : %t)", num_of_y_hexes, num_of_x_hexes, first_hex_skipped)
+		log.Printf("reading %d x %d hex field (first hex is skipped : %t)", num_of_y_hexes, num_of_x_hexes, first_hex_skipped)
 
-			table_height := num_of_y_hexes*2 + 2
-			table_width := num_of_x_hexes + 2
+		table_height := num_of_y_hexes*2 + 2
+		table_width := num_of_x_hexes + 2
 
-			table := make([][]byte, table_height)
-			for i := range table_height {
-				table[i] = make([]byte, table_width)
-			}
-			for i := range table_height {
-				for j := range table_width {
-					table[i][j] = ' '
+		table := make([][]byte, table_height)
+		for i := range table_height {
+			table[i] = make([]byte, table_width)
+		}
+		for i := range table_height {
+			for j := range table_width {
+				table[i][j] = ' '
 
-					if i == 0 || j == 0 || i == table_height-1 || j == table_width-1 {
-						table[i][j] = '~'
-					}
+				if i == 0 || j == 0 || i == table_height-1 || j == table_width-1 {
+					table[i][j] = '~'
 				}
 			}
+		}
 
-			found_src_dst_in_one_hex,
-				spread_start_y,
-				spread_start_x :=
-				map_hex_table(&table, num_of_y_hexes*2, num_of_x_hexes, hex_height, hex_width, &char_table, first_hex_skipped)
+		destination_found,
+			spread_start_y,
+			spread_start_x =
+			map_hex_table(&table, num_of_y_hexes*2, num_of_x_hexes, hex_height, hex_width, &char_table, first_hex_skipped)
 
-			if found_src_dst_in_one_hex {
-				log.Printf("src & dst inside same hex, breaking dataset computations...")
-				fmt.Fprintf(out, "0\n")
-			}
+		if destination_found {
+			log.Printf("src & dst inside same hex, breaking dataset computations...")
+			fmt.Fprintf(out, "0\n")
+			continue DATASETS_LOOP
+		}
 
-			log.Printf(
-				"starting spreading from (%d;%d)",
+		log.Printf(
+			"starting spreading from (%d;%d)",
+			spread_start_y,
+			spread_start_x,
+		)
+
+		table[spread_start_y][spread_start_x] = '*'
+		print_table(&table, table_height, table_width)
+
+		// destination_found is FALSE from "map_hex_table" func
+		already_sailed = false
+		element_borders_reached = 0
+		replace_what = 'G'
+		replace_with = '*'
+
+		for !destination_found {
+			spread_from_point(
+				&table,
+				table_height,
+				table_width,
 				spread_start_y,
 				spread_start_x,
 			)
 
-			table[spread_start_y][spread_start_x] = '*'
-			print_table(&table, table_height, table_width)
-
-			element_borders_reached := 0
-			destination_found := false
-
-			var spread_over byte = 'G'
-
-		SPREAD_LOOP:
-			for {
-
-				destination_found,
-					spread_start_y,
-					spread_start_x =
-					spread_from_point(
-						&table,
-						table_height,
-						table_width,
-						spread_start_y,
-						spread_start_x,
-						spread_over,
-						'*',
-					)
-
-				if destination_found {
-					log.Printf("REACHED DESTINATION with %d borders crossed\n", element_borders_reached)
-					fmt.Fprintf(out, "%d\n", element_borders_reached)
-					break SPREAD_LOOP
-				}
-
-				element_borders_reached++
-				if spread_over == 'G' {
-					spread_over = '~'
-				} else {
-					spread_over = 'G'
-				}
+			switch replace_what {
+			case 'G':
+				replace_what = '~'
+			case '~':
+				replace_what = 'G'
+			default:
+				replace_what = '_'
 			}
 
-			//fmt.Fprintf(out, "9999\n")
+			if !destination_found {
+				element_borders_reached++
+			}
 		}
+
+		fmt.Fprintf(out, "%d\n", element_borders_reached)
+
 	}
 
 	//fmt.Fprintf(out, "%s\n", "0\n2\n2\n5")
@@ -290,41 +291,112 @@ func spread_from_point(
 	table_width,
 	from_y,
 	from_x int,
-	replace_what,
-	replace_with byte,
-) (
-	destination_found bool,
-	non_replacable_found_at_y,
-	non_replacable_found_at_x int,
 ) {
 
-	// border of map reached
-	if (replace_what=='~') && (from_y <= 0 || from_x <= 0 || from_y >= table_height-1 || from_x >= table_width-1) {
-	
-		if !already_sailed{
+	if !destination_found {
 
-			for i := range table_height {
-				for j := range table_width {
-					if i == 1 || j == 1 || i == table_height-2 || j == table_width-2 {
-						if (*table)[i][j] == '~' {
+		log.Printf("SPREAD STARTED AT (%d;%d)", from_y, from_x)
 
-							if found
+		var dx, dy int
 
-						}
-					}
+		dy, dx = -2, 0
+		if !destination_found {
+			spread_from_point_check_replce(table, table_height, table_width, from_y+dy, from_x+dx)
+		}
+
+		dy, dx = +2, 0
+		if !destination_found {
+			spread_from_point_check_replce(table, table_height, table_width, from_y+dy, from_x+dx)
+		}
+
+		dy, dx = -1, -1
+		if !destination_found {
+			spread_from_point_check_replce(table, table_height, table_width, from_y+dy, from_x+dx)
+		}
+
+		dy, dx = -1, +1
+		if !destination_found {
+			spread_from_point_check_replce(table, table_height, table_width, from_y+dy, from_x+dx)
+		}
+
+		dy, dx = +1, -1
+		if !destination_found {
+			spread_from_point_check_replce(table, table_height, table_width, from_y+dy, from_x+dx)
+		}
+
+		dy, dx = +1, +1
+		if !destination_found {
+			spread_from_point_check_replce(table, table_height, table_width, from_y+dy, from_x+dx)
+		}
+	}
+}
+
+func spread_from_point_check_replce(
+	table *[][]byte,
+	table_height,
+	table_width,
+	check_y,
+	check_x int,
+) {
+
+	if !destination_found {
+		if check_y <= 0 || check_x <= 0 || check_y >= table_height-1 || check_x >= table_width-1 {
+
+			if !already_sailed {
+				go_sailing_spread_from_border(table, table_height, table_width)
+			}
+		} else {
+
+			switch (*table)[check_y][check_x] {
+			case 'X':
+				destination_found = true
+				log.Printf(
+					"######################\nDESTINATION FOUND at (%d;%d)!!!",
+					check_y, check_x)
+
+			case replace_what:
+
+				(*table)[check_y][check_x] = replace_with
+
+				log.Printf(
+					"replaced %c -> %c at (%d;%d):",
+					replace_what,
+					replace_with,
+					check_y,
+					check_x,
+				)
+				print_table(table, table_height, table_width)
+
+				spread_from_point(table, table_height, table_width, check_y, check_x)
+
+			case replace_with:
+				spread_start_y = check_y
+				spread_start_x = check_x
+			}
+		}
+	}
+}
+
+func go_sailing_spread_from_border(
+	table *[][]byte,
+	table_height,
+	table_width int,
+) {
+
+	already_sailed = true
+
+	for i := range table_height {
+		for j := range table_width {
+
+			if i == 1 || j == 1 || i == table_height-2 || j == table_width-2 {
+				if (*table)[i][j] == '~' {
+					spread_from_point(table, table_height, table_width, i, j)
 				}
-			}	
-
-		}else{
-
-			return false, -1,-1
+			}
 
 		}
 	}
 
-	return destination_found,
-		non_replacable_found_at_y,
-		non_replacable_found_at_x
 }
 
 func print_table(table *[][]byte, table_height, table_width int) {

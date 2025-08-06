@@ -222,9 +222,9 @@ DATASETS_LOOP:
 			}
 		}
 
-		borders_table := make([][]byte, table_height)
+		borders_table := make([][]uint8, table_height)
 		for i := range table_height {
-			borders_table[i] = make([]byte, table_width)
+			borders_table[i] = make([]uint8, table_width)
 		}
 
 		destination_found,
@@ -253,7 +253,8 @@ DATASETS_LOOP:
 		)
 
 		table[spread_start_y][spread_start_x] = '*'
-		print_table(&table, table_height, table_width)
+		borders_table[spread_start_y][spread_start_x] = 0
+		print_table(&table, &borders_table, table_height, table_width)
 
 		/*
 			// destination_found is FALSE from "map_hex_table" func
@@ -305,148 +306,17 @@ DATASETS_LOOP:
 	}
 }
 
-/*
-func spread_from_point(
-	table *[][]byte,
-	table_height,
-	table_width,
-	from_y,
-	from_x int,
-) {
-
-	if !destination_found {
-
-		log.Printf("SPREAD STARTED AT (%d;%d) replacing %c -> %c", from_y, from_x, replace_what, replace_with)
-
-		var dx, dy int
-
-		dy, dx = 0, 0
-		if !destination_found {
-			spread_from_point_check_replce(table, table_height, table_width, from_y+dy, from_x+dx)
-		}
-
-		dy, dx = -2, 0
-		if !destination_found {
-			spread_from_point_check_replce(table, table_height, table_width, from_y+dy, from_x+dx)
-		}
-
-		dy, dx = +2, 0
-		if !destination_found {
-			spread_from_point_check_replce(table, table_height, table_width, from_y+dy, from_x+dx)
-		}
-
-		dy, dx = -1, -1
-		if !destination_found {
-			spread_from_point_check_replce(table, table_height, table_width, from_y+dy, from_x+dx)
-		}
-
-		dy, dx = -1, +1
-		if !destination_found {
-			spread_from_point_check_replce(table, table_height, table_width, from_y+dy, from_x+dx)
-		}
-
-		dy, dx = +1, -1
-		if !destination_found {
-			spread_from_point_check_replce(table, table_height, table_width, from_y+dy, from_x+dx)
-		}
-
-		dy, dx = +1, +1
-		if !destination_found {
-			spread_from_point_check_replce(table, table_height, table_width, from_y+dy, from_x+dx)
-		}
-	}
-}
-
-func spread_from_point_check_replce(
-	table *[][]byte,
-	table_height,
-	table_width,
-	check_y,
-	check_x int,
-) {
-
-	if !destination_found {
-		if check_y <= 0 || check_x <= 0 || check_y >= table_height-1 || check_x >= table_width-1 {
-
-			if !already_sailed {
-				go_sailing_spread_from_border(table, table_height, table_width)
-			}
-		} else {
-
-			switch (*table)[check_y][check_x] {
-			case 'X':
-				if replace_what == '~' {
-					log.Printf("FOUND DESTINATION FROM WATER!!!")
-					element_borders_reached++
-				}
-				destination_found = true
-				log.Printf(
-					"######################\nDESTINATION FOUND at (%d;%d)!!!",
-					check_y, check_x)
-
-			case replace_what:
-
-				(*table)[check_y][check_x] = replace_with
-
-				log.Printf(
-					"replaced %c -> %c at (%d;%d):",
-					replace_what,
-					replace_with,
-					check_y,
-					check_x,
-				)
-				print_table(table, table_height, table_width)
-
-				spread_from_point(table, table_height, table_width, check_y, check_x)
-
-			default:
-
-				if (*table)[check_y][check_x] != replace_with &&
-					(*table)[check_y][check_x] != ' ' {
-					spread_start_y = check_y
-					spread_start_x = check_x
-					log.Printf("### spread_start set to (%d;%d)", spread_start_y, spread_start_x)
-				}
-			}
-		}
-	}
-}
-
-func go_sailing_spread_from_border(
-	table *[][]byte,
-	table_height,
-	table_width int,
-) {
-
-	if !destination_found && replace_what == '~' {
-
-		log.Printf("~~~ SAILING!!! ~~~ ~~~ SAILING!!! ~~~ ~~~ SAILING!!! ~~~ ~~~ SAILING!!! ~~~")
-
-		already_sailed = true
-
-		for i := range table_height {
-			for j := range table_width {
-
-				if i == 1 || j == 1 || i == table_height-2 || j == table_width-2 {
-					if (*table)[i][j] == '~' {
-						spread_from_point(table, table_height, table_width, i, j)
-					}
-				}
-
-			}
-		}
-
-		log.Printf("~~~ END SAILING ~~~ ~~~ END SAILING ~~~ ~~~ END SAILING ~~~ ~~~ END SAILING ~~~")
-	}
-}
-*/
-
-func print_table(table *[][]byte, table_height, table_width int) {
+func print_table(t *[][]byte, bt *[][]uint8, table_height, table_width int) {
 
 	s := ""
 	for i := range table_height {
 		for j := range table_width {
-			s += string((*table)[i][j]) + ""
+			s += string((*t)[i][j])
+			if (*t)[i][j] == '*' {
+				s += fmt.Sprintf("|%d ", (*bt)[i][j])
+			} else {
+				s += "   "
+			}
 		}
 		s += "\n"
 	}

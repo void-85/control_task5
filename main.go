@@ -25,6 +25,9 @@ var (
 	element_borders_reached      = 0
 	replace_what            byte = '_'
 	replace_with            byte = '_'
+
+	tests_passed = 0
+	tests_total  = 0
 )
 
 func main() {
@@ -44,6 +47,7 @@ func main() {
 		}
 
 		log.Printf("\033[37mtesting file \"%s\"\n", in_file)
+		tests_total++
 		out_file := in_file + ".a"
 
 		input, err := os.ReadFile(in_file)
@@ -122,12 +126,14 @@ func main() {
 			} */
 
 		} else {
+			tests_passed++
 			log.Printf("\033[32mPASSED %s 	(worked %s)\n", in_file, time_elapsed)
 		}
 
 	}
 
 	log.Printf("\033[33m[ FINISHED ]\n\n")
+	log.Printf("TESTS : %d / %d passed", tests_passed, tests_total)
 }
 
 func test_func() {
@@ -196,7 +202,7 @@ DATASETS_LOOP:
 			}
 			s += "\n"
 		}
-		log.Printf("-------------------------------------\nN == %d   M == %d\nloaded char_table:\n%s\nCHECK PATH: (%d;%d) --> (%d;%d)", n, m, s, y1, x1, y2, x2)
+		log.Printf("---------- NEW DATASET ---------------------------\nN == %d   M == %d\nloaded char_table:\n%s\nCHECK PATH: (%d;%d) --> (%d;%d)", n, m, s, y1, x1, y2, x2)
 		//---- PRINT char_table --------------------------------------------------
 
 		if y1 == y2 && x1 == x2 {
@@ -256,6 +262,7 @@ DATASETS_LOOP:
 		replace_with = '*'
 
 		for !destination_found {
+
 			spread_from_point(
 				&table,
 				table_height,
@@ -273,8 +280,23 @@ DATASETS_LOOP:
 				replace_what = '_'
 			}
 
+			log.Printf("CHANGED : NOW replacing %c -> %c", replace_what, replace_with)
+
 			if !destination_found {
 				element_borders_reached++
+
+				log.Printf(
+					"at current table state INCREASING 'element_borders_reached' to %d\n#########################\n",
+					element_borders_reached)
+
+				print_table(&table, table_height, table_width)
+				log.Printf("\n#########################\n")
+
+				if element_borders_reached > 200 {
+					log.Printf("ERROR !!! ERROR !!! ERROR !!! ERROR !!! ERROR !!! ERROR !!!")
+					log.Printf("too much borders crossed, possibly error! check!")
+					break DATASETS_LOOP
+				}
 			}
 		}
 
@@ -295,9 +317,14 @@ func spread_from_point(
 
 	if !destination_found {
 
-		log.Printf("SPREAD STARTED AT (%d;%d)", from_y, from_x)
+		log.Printf("SPREAD STARTED AT (%d;%d) replacing %c -> %c", from_y, from_x, replace_what, replace_with)
 
 		var dx, dy int
+
+		dy, dx = 0, 0
+		if !destination_found {
+			spread_from_point_check_replce(table, table_height, table_width, from_y+dy, from_x+dx)
+		}
 
 		dy, dx = -2, 0
 		if !destination_found {
@@ -349,6 +376,10 @@ func spread_from_point_check_replce(
 
 			switch (*table)[check_y][check_x] {
 			case 'X':
+				if replace_what == '~' {
+					log.Printf("FOUND DESTINATION FROM WATER!!!")
+					element_borders_reached++
+				}
 				destination_found = true
 				log.Printf(
 					"######################\nDESTINATION FOUND at (%d;%d)!!!",
@@ -369,9 +400,14 @@ func spread_from_point_check_replce(
 
 				spread_from_point(table, table_height, table_width, check_y, check_x)
 
-			case replace_with:
-				spread_start_y = check_y
-				spread_start_x = check_x
+			default:
+
+				if (*table)[check_y][check_x] != replace_with &&
+					(*table)[check_y][check_x] != ' ' {
+					spread_start_y = check_y
+					spread_start_x = check_x
+					log.Printf("### spread_start set to (%d;%d)", spread_start_y, spread_start_x)
+				}
 			}
 		}
 	}
@@ -383,20 +419,26 @@ func go_sailing_spread_from_border(
 	table_width int,
 ) {
 
-	already_sailed = true
+	if !destination_found && replace_what == '~' {
 
-	for i := range table_height {
-		for j := range table_width {
+		log.Printf("~~~ SAILING!!! ~~~ ~~~ SAILING!!! ~~~ ~~~ SAILING!!! ~~~ ~~~ SAILING!!! ~~~")
 
-			if i == 1 || j == 1 || i == table_height-2 || j == table_width-2 {
-				if (*table)[i][j] == '~' {
-					spread_from_point(table, table_height, table_width, i, j)
+		already_sailed = true
+
+		for i := range table_height {
+			for j := range table_width {
+
+				if i == 1 || j == 1 || i == table_height-2 || j == table_width-2 {
+					if (*table)[i][j] == '~' {
+						spread_from_point(table, table_height, table_width, i, j)
+					}
 				}
+
 			}
-
 		}
-	}
 
+		log.Printf("~~~ END SAILING ~~~ ~~~ END SAILING ~~~ ~~~ END SAILING ~~~ ~~~ END SAILING ~~~")
+	}
 }
 
 func print_table(table *[][]byte, table_height, table_width int) {

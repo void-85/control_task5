@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 )
 
 func print_table(
@@ -23,5 +22,5 @@ func print_table(
 		}
 		s += "\n"
 	}
-	log.Printf("\nloaded table:\n%s", s)
+	//log.Printf("\nloaded table:\n%s", s)
 }

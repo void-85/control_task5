@@ -1,7 +1,5 @@
 package main
 
-import "log"
-
 type delta struct {
 	y int
 	x int
@@ -19,7 +17,7 @@ func spread_area_from_point_helper(
 
 	if !destination_found {
 
-		log.Printf("SPREAD STARTED AT (%d;%d) replacing %c -> %c", from_y, from_x, replace_what, replace_with)
+		//log.Printf("SPREAD STARTED AT (%d;%d) replacing %c -> %c", from_y, from_x, replace_what, replace_with)
 
 		deltas := []delta{
 			{+0, +0},
@@ -78,26 +76,26 @@ func spread_area_from_point(
 
 				element_borders_reached = current_element_borders_reached
 				if replace_what == '~' {
-					log.Printf("FOUND DESTINATION FROM WATER!!!")
+					//log.Printf("FOUND DESTINATION FROM WATER!!!")
 					element_borders_reached++
 				}
 				destination_found = true
-				log.Printf(
-					"######################\nDESTINATION FOUND at (%d;%d)!!!",
-					from_y, from_x)
+				/* 				//log.Printf(
+				"######################\nDESTINATION FOUND at (%d;%d)!!!",
+				from_y, from_x) */
 
 			case replace_what:
 
 				(*table)[from_y][from_x] = replace_with
 				(*borders_table)[from_y][from_x] = current_element_borders_reached
 
-				log.Printf(
+				/* 				//log.Printf(
 					"replaced %c -> %c at (%d;%d):",
 					replace_what,
 					replace_with,
 					from_y,
 					from_x,
-				)
+				) */
 				//print_table(table, table_height, table_width)
 
 				spread_area_from_point_helper(
@@ -116,7 +114,7 @@ func spread_area_from_point(
 					(*table)[check_y][check_x] != ' ' {
 					spread_start_y = check_y
 					spread_start_x = check_x
-					log.Printf("### spread_start set to (%d;%d)", spread_start_y, spread_start_x)
+					//log.Printf("### spread_start set to (%d;%d)", spread_start_y, spread_start_x)
 				}*/
 			}
 		}
@@ -133,7 +131,7 @@ func go_sailing_spread_from_border(
 
 	if !destination_found && replace_what == '~' {
 
-		log.Printf("~~~ SAILING!!! ~~~ ~~~ SAILING!!! ~~~ ~~~ SAILING!!! ~~~ ~~~ SAILING!!! ~~~")
+		//log.Printf("~~~ SAILING!!! ~~~ ~~~ SAILING!!! ~~~ ~~~ SAILING!!! ~~~ ~~~ SAILING!!! ~~~")
 
 		already_sailed = true
 
@@ -159,6 +157,6 @@ func go_sailing_spread_from_border(
 			}
 		}
 
-		log.Printf("~~~ END SAILING ~~~ ~~~ END SAILING ~~~ ~~~ END SAILING ~~~ ~~~ END SAILING ~~~")
+		//log.Printf("~~~ END SAILING ~~~ ~~~ END SAILING ~~~ ~~~ END SAILING ~~~ ~~~ END SAILING ~~~")
 	}
 }

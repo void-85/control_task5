@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -94,12 +93,12 @@ func main() {
 
 			failed_tests_names += fmt.Sprintf("failed: %s\n", in_file)
 
-			actual_output_splitted := strings.Split(actual_output, "\n")
-			expected_output_splitted := strings.Split(string(output), "\n")
+			//actual_output_splitted := strings.Split(actual_output, "\n")
+			//expected_output_splitted := strings.Split(string(output), "\n")
 
 			log.Printf("\033[31mFAILED %s (worked %s)\033[34m", in_file, time_elapsed)
-			log.Printf("\033[35mEXP\tACT\tLINE #\033[34m")
-			for i := range int(math.Max(float64(len(actual_output_splitted)), float64(len(expected_output_splitted)))) {
+			//log.Printf("\033[35mEXP\tACT\tLINE #\033[34m")
+			/* for i := range int(math.Max(float64(len(actual_output_splitted)), float64(len(expected_output_splitted)))) {
 
 				a, b, color := "", "", ""
 				if i < len(expected_output_splitted) {
@@ -116,17 +115,17 @@ func main() {
 				}
 
 				if a != "" && b != "" {
-					log.Printf("%s%s\t%s\t(#%d)\033[34m", color, a, b, i+1)
+					//log.Printf("%s%s\t%s\t(#%d)\033[34m", color, a, b, i+1)
 				}
-			}
+			} */
 
 			/* if len(actual_output_splitted) == len(expected_output_splitted) {
-				log.Printf("\n\033[31mFAILED %s (worked %s):", time_elapsed)
+				//log.Printf("\n\033[31mFAILED %s (worked %s):", time_elapsed)
 				for i := range len(actual_output_splitted) {
-					log.Printf("%s\t\t<-must be--\t\t%s", actual_output_splitted[i], expected_output_splitted[i])
+					//log.Printf("%s\t\t<-must be--\t\t%s", actual_output_splitted[i], expected_output_splitted[i])
 				}
 			} else {
-				log.Printf("\n\033[31mFAILED %s (worked %s)\nExpected:\n%s\nGot:\n%s\n", in_file, time_elapsed, expected_output, actual_output)
+				//log.Printf("\n\033[31mFAILED %s (worked %s)\nExpected:\n%s\nGot:\n%s\n", in_file, time_elapsed, expected_output, actual_output)
 			} */
 
 		} else {
@@ -150,15 +149,15 @@ func test_func() {
 	var datasets int
 	fmt.Fscanln(inp, &datasets)
 
-	//log.Printf("there are %d datasets\n", datasets)
+	////log.Printf("there are %d datasets\n", datasets)
 
 DATASETS_LOOP:
-	for cur_dataset := range datasets {
+	for range /*cur_dataset := */ datasets {
 
 		var n, m int
 		fmt.Fscanln(inp, &n, &m)
 
-		//log.Printf("n== %d m == %d\n", n, m)
+		////log.Printf("n== %d m == %d\n", n, m)
 
 		char_table := make([][]byte, n)
 		for i := range n {
@@ -169,11 +168,11 @@ DATASETS_LOOP:
 		for y := range n {
 
 			chars, _ := inp.ReadString('\n') ///FUCK spaces trailing!!!!
-			//log.Printf("line is %d chars length\n", len(chars))
+			////log.Printf("line is %d chars length\n", len(chars))
 
 			for x := range m {
 
-				//log.Printf("reading (%d;%d)\n", y, x)
+				////log.Printf("reading (%d;%d)\n", y, x)
 
 				char_table[y][x] = chars[x]
 			}
@@ -191,22 +190,22 @@ DATASETS_LOOP:
 		}
 
 		//---- PRINT char_table --------------------------------------------------
-		s := ""
-		for y := range n {
-			for x := range m {
-				s += string(char_table[y][x]) + " "
-			}
-			s += "\n"
-		}
-		log.Printf(
+		/* 		s := ""
+		   		for y := range n {
+		   			for x := range m {
+		   				s += string(char_table[y][x]) + " "
+		   			}
+		   			s += "\n"
+		   		} */
+		/* 		//log.Printf(
 			"---------- %d DATASET ---------------------------\nN == %d   M == %d\nloaded char_table:\n%s\nCHECK PATH: (%d;%d) --> (%d;%d)",
 			cur_dataset+1,
 			n, m, s, y1, x1, y2, x2,
-		)
+		) */
 		//---- PRINT char_table --------------------------------------------------
 
 		if y1 == y2 && x1 == x2 {
-			log.Printf("same coords inside same hex, breaking dataset computations...")
+			//log.Printf("same coords inside same hex, breaking dataset computations...")
 			fmt.Fprintf(out, "0\n")
 			continue DATASETS_LOOP
 		}
@@ -216,7 +215,7 @@ DATASETS_LOOP:
 		num_of_y_hexes := (n - 1) / (hex_height + hex_height)
 		num_of_x_hexes := (m - hex_height) / (hex_height + hex_width)
 
-		log.Printf("reading %d x %d hex field (first hex is skipped : %t)", num_of_y_hexes, num_of_x_hexes, first_hex_skipped)
+		//log.Printf("reading %d x %d hex field (first hex is skipped : %t)", num_of_y_hexes, num_of_x_hexes, first_hex_skipped)
 
 		table_height := num_of_y_hexes * 2
 		table_width := num_of_x_hexes
@@ -252,16 +251,16 @@ DATASETS_LOOP:
 		// TODO: FREE char_table MEMORY
 
 		if destination_found {
-			log.Printf("src & dst inside same hex, breaking dataset computations...")
+			//log.Printf("src & dst inside same hex, breaking dataset computations...")
 			fmt.Fprintf(out, "0\n")
 			continue DATASETS_LOOP
 		}
 
-		log.Printf(
+		/* 		//log.Printf(
 			"starting spreading from (%d;%d)",
 			spread_start_y,
 			spread_start_x,
-		)
+		) */
 
 		table[spread_start_y][spread_start_x] = 'G'
 		borders_table[spread_start_y][spread_start_x] = 0
@@ -270,7 +269,7 @@ DATASETS_LOOP:
 		already_sailed = false
 		element_borders_reached = 0
 
-		print_table(&table, &borders_table, table_height, table_width)
+		//print_table(&table, &borders_table, table_height, table_width)
 
 		spread_area_from_point_helper(
 			&table,
@@ -304,12 +303,12 @@ DATASETS_LOOP:
 				spread_start_x,
 				element_borders_reached)
 
-			log.Printf("iteration passed")
-			print_table(&table, &borders_table, table_height, table_width)
+			//log.Printf("iteration passed")
+			//print_table(&table, &borders_table, table_height, table_width)
 
 		}
 
-		print_table(&table, &borders_table, table_height, table_width)
+		//print_table(&table, &borders_table, table_height, table_width)
 
 		/*
 			// destination_found is FALSE from "map_hex_table" func
@@ -337,21 +336,21 @@ DATASETS_LOOP:
 					replace_what = '_'
 				}
 
-				log.Printf("CHANGED : NOW replacing %c -> %c", replace_what, replace_with)
+				//log.Printf("CHANGED : NOW replacing %c -> %c", replace_what, replace_with)
 
 				if !destination_found {
 					element_borders_reached++
 
-					log.Printf(
+					//log.Printf(
 						"at current table state INCREASING 'element_borders_reached' to %d\n#########################\n",
 						element_borders_reached)
 
 					print_table(&table, table_height, table_width)
-					log.Printf("\n#########################\n")
+					//log.Printf("\n#########################\n")
 
 					if element_borders_reached > 200 {
-						log.Printf("ERROR !!! ERROR !!! ERROR !!! ERROR !!! ERROR !!! ERROR !!!")
-						log.Printf("too much borders crossed, possibly error! check!")
+						//log.Printf("ERROR !!! ERROR !!! ERROR !!! ERROR !!! ERROR !!! ERROR !!!")
+						//log.Printf("too much borders crossed, possibly error! check!")
 						break DATASETS_LOOP
 					}
 				}
@@ -361,7 +360,7 @@ DATASETS_LOOP:
 	}
 }
 
-func switch_replacing_what_with() {
+/* func switch_replacing_what_with() {
 	switch replace_what {
 	case 'G':
 		replace_what = '~'
@@ -370,4 +369,4 @@ func switch_replacing_what_with() {
 	default:
 		replace_what = '_'
 	}
-}
+} */

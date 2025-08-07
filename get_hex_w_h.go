@@ -1,11 +1,9 @@
 package main
 
-import "log"
-
 func get_hexagon_height_width(char_table *[][]byte, n, m int) (first_hex_skipped bool, height, width int) {
 
 	first_hex_skipped = false
-	log.Printf("examining table %dx%d", n, m)
+	//log.Printf("examining table %dx%d", n, m)
 
 MAIN_LOOP:
 	for h := range n + 1 {
@@ -53,7 +51,7 @@ MAIN_LOOP:
 
 						if passed_lines == 6 {
 
-							log.Printf("found hex(%dx%d) at point(%d;%d)", h, w, y, x)
+							//log.Printf("found hex(%dx%d) at point(%d;%d)", h, w, y, x)
 							if y%(1+h+h) == 0 && x%(h+w+h+w) == 0 {
 								first_hex_skipped = false
 							} else {
@@ -71,9 +69,9 @@ MAIN_LOOP:
 	}
 
 	if height == 0 && width == 0 {
-		log.Printf("hex size not found!")
+		//log.Printf("hex size not found!")
 	} else {
-		log.Printf("h==%d w==%d hex size found", height, width)
+		//log.Printf("h==%d w==%d hex size found", height, width)
 	}
 
 	return first_hex_skipped, height, width

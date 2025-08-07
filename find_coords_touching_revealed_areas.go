@@ -1,7 +1,5 @@
 package main
 
-import "log"
-
 func find_coords_touching_revealed_areas(
 	t *[][]byte,
 	bt *[][]int,
@@ -106,12 +104,12 @@ func validate_touch_position(
 							replace_what = '~'
 						}
 
-						log.Printf(
+						/* 				//log.Printf(
 							"FOUND REVEALED AREAS TOUCHING COORD at (%d;%d) with NEIGHBOR CROSSED BORDERS==%d",
 							check_y+delta.y,
 							check_x+delta.x,
 							(*bt)[check_y+delta.y][check_x+delta.x],
-						)
+						) */
 						return true, (*bt)[check_y+delta.y][check_x+delta.x]
 
 					}

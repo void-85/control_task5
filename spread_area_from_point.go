@@ -140,7 +140,9 @@ func go_sailing_spread_from_border(
 		for i := range table_height {
 			for j := range table_width {
 
-				if i == 0 || j == 0 || i == table_height-1 || j == table_width-1 {
+				if i == 0 || j == 0 ||
+					i == table_height-1 || j == table_width-1 ||
+					(i == 1) {
 					if (*table)[i][j] == '~' {
 						spread_area_from_point_helper(
 							table,

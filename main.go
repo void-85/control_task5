@@ -153,7 +153,7 @@ func test_func() {
 	//log.Printf("there are %d datasets\n", datasets)
 
 DATASETS_LOOP:
-	for range datasets {
+	for cur_dataset := range datasets {
 
 		var n, m int
 		fmt.Fscanln(inp, &n, &m)
@@ -198,7 +198,11 @@ DATASETS_LOOP:
 			}
 			s += "\n"
 		}
-		log.Printf("---------- NEW DATASET ---------------------------\nN == %d   M == %d\nloaded char_table:\n%s\nCHECK PATH: (%d;%d) --> (%d;%d)", n, m, s, y1, x1, y2, x2)
+		log.Printf(
+			"---------- %d DATASET ---------------------------\nN == %d   M == %d\nloaded char_table:\n%s\nCHECK PATH: (%d;%d) --> (%d;%d)",
+			cur_dataset+1,
+			n, m, s, y1, x1, y2, x2,
+		)
 		//---- PRINT char_table --------------------------------------------------
 
 		if y1 == y2 && x1 == x2 {

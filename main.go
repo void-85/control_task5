@@ -222,9 +222,9 @@ DATASETS_LOOP:
 			}
 		}
 
-		borders_table := make([][]uint8, table_height)
+		borders_table := make([][]int, table_height)
 		for i := range table_height {
-			borders_table[i] = make([]uint8, table_width)
+			borders_table[i] = make([]int, table_width)
 		}
 
 		destination_found,
@@ -240,6 +240,8 @@ DATASETS_LOOP:
 				first_hex_skipped,
 			)
 
+		// TODO: FREE char_table MEMORY
+
 		if destination_found {
 			log.Printf("src & dst inside same hex, breaking dataset computations...")
 			fmt.Fprintf(out, "0\n")
@@ -252,8 +254,50 @@ DATASETS_LOOP:
 			spread_start_x,
 		)
 
-		table[spread_start_y][spread_start_x] = '*'
+		table[spread_start_y][spread_start_x] = 'G'
 		borders_table[spread_start_y][spread_start_x] = 0
+		already_sailed = false
+		element_borders_reached = 0
+
+		print_table(&table, &borders_table, table_height, table_width)
+
+		spread_area_from_point_helper(
+			&table,
+			&borders_table,
+			table_height,
+			table_width,
+			spread_start_y,
+			spread_start_x,
+			element_borders_reached)
+
+		for !destination_found {
+
+			spread_start_y,
+				spread_start_x,
+				element_borders_reached =
+				find_coords_touching_revealed_areas(
+					&table,
+					&borders_table,
+					table_height,
+					table_width,
+					spread_start_y,
+					spread_start_x,
+				)
+
+			spread_area_from_point_helper(
+				&table,
+				&borders_table,
+				table_height,
+				table_width,
+				spread_start_y,
+				spread_start_x,
+				element_borders_reached)
+
+			log.Printf("iteration passed")
+			print_table(&table, &borders_table, table_height, table_width)
+
+		}
+
 		print_table(&table, &borders_table, table_height, table_width)
 
 		/*
@@ -306,231 +350,13 @@ DATASETS_LOOP:
 	}
 }
 
-func print_table(t *[][]byte, bt *[][]uint8, table_height, table_width int) {
-
-	s := ""
-	for i := range table_height {
-		for j := range table_width {
-			s += string((*t)[i][j])
-			if (*t)[i][j] == '*' {
-				s += fmt.Sprintf("|%d ", (*bt)[i][j])
-			} else {
-				s += "   "
-			}
-		}
-		s += "\n"
+func switch_replacing_what_with() {
+	switch replace_what {
+	case 'G':
+		replace_what = '~'
+	case '~':
+		replace_what = 'G'
+	default:
+		replace_what = '_'
 	}
-	log.Printf("\nloaded table:\n%s", s)
-
-}
-
-func map_hex_table(
-	table *[][]byte,
-	total_y_hexes,
-	total_x_hexes,
-	hex_h,
-	hex_w int,
-	char_table *[][]byte,
-	first_hex_skipped bool,
-) (
-	found_src_dst_in_one_hex bool,
-	spread_start_y,
-	spread_start_x int,
-) {
-
-	for y := range total_y_hexes / 2 {
-		for x := range total_x_hexes {
-
-			lower_position := (x%2 == 1)
-			if first_hex_skipped {
-				lower_position = !lower_position
-			}
-
-			is_ground, num_of_src_dst_points :=
-				test_coords_for_ground_hex_and_check_for_src_dst(
-					char_table,
-					y,
-					x,
-					hex_h,
-					hex_w,
-					lower_position,
-				)
-
-			if num_of_src_dst_points == 2 {
-				return true, 0, 0
-			}
-
-			lower_shift := 0
-			if lower_position {
-				lower_shift = 1
-			}
-
-			setting_char := 'G'
-			if is_ground {
-
-				if num_of_src_dst_points == 1 {
-					setting_char = 'X'
-					spread_start_y = y*2 + lower_shift
-					spread_start_x = x
-				}
-
-			} else {
-				setting_char = '~'
-			}
-
-			(*table)[y*2+lower_shift][x] = byte(setting_char)
-		}
-	}
-
-	return false, spread_start_y, spread_start_x
-}
-
-func test_coords_for_ground_hex_and_check_for_src_dst(
-	ct *[][]byte,
-	test_y,
-	test_x,
-	hex_h,
-	hex_w int,
-	lower_position bool,
-) (
-	is_ground bool,
-	num_of_src_dst_points int,
-) {
-
-	ct_y := test_y * (hex_h + hex_h)
-	ct_x := test_x * (hex_h + hex_w)
-
-	if lower_position {
-		ct_y += hex_h
-	}
-
-	// CRITICAL EDGE CASE - NO LOWER HEXES IN CHAR_TABLE but trying to move over the boundaries
-	if ct_y+hex_h+hex_h >= len(*ct) {
-		return false, 0
-	}
-
-	passed_chars := 0
-	passed_lines := 0
-
-	// H line TOP+BOTTOM
-	passed_chars = 0
-	for i := range hex_w {
-		if (*ct)[ct_y][ct_x+hex_h+i] == '_' && (*ct)[ct_y+hex_h+hex_h][ct_x+hex_h+i] == '_' {
-			passed_chars++
-		}
-	}
-	if passed_chars == hex_w {
-		passed_lines += 2
-	}
-
-	// DIAG line LEFT TOP+BOTTOM + RIGHT BOTTOM+TOP
-	passed_chars = 0
-	for i := range hex_h {
-
-		if (*ct)[ct_y+hex_h-i][ct_x+i] == '/' && (*ct)[ct_y+hex_h+i+1][ct_x+i] == '\\' {
-			passed_chars++
-		}
-
-		if (*ct)[ct_y+hex_h-i][ct_x+hex_h+hex_h+hex_w-i-1] == '\\' && (*ct)[ct_y+hex_h+i+1][ct_x+hex_h+hex_h+hex_w-i-1] == '/' {
-			passed_chars++
-		}
-
-		for j := ct_x + i + 1; j < ct_x+hex_h+hex_h+hex_w-i-1; j++ {
-			if (*ct)[ct_y+hex_h-i][j] == 'X' {
-				num_of_src_dst_points++
-			}
-
-			if (*ct)[ct_y+hex_h+i+1][j] == 'X' {
-				num_of_src_dst_points++
-			}
-		}
-	}
-
-	if passed_chars == 2*hex_h {
-		passed_lines += 4
-	}
-
-	if passed_lines == 6 {
-		is_ground = true
-	}
-
-	return is_ground, num_of_src_dst_points
-}
-
-func get_hexagon_height_width(char_table *[][]byte, n, m int) (first_hex_skipped bool, height, width int) {
-
-	first_hex_skipped = false
-	log.Printf("examining table %dx%d", n, m)
-
-MAIN_LOOP:
-	for h := range n + 1 {
-		for w := range m + 1 {
-
-			if 1 <= w && 1 <= h {
-				for y := range n - h - h - 1 + 1 {
-					for x := range m - w - h - h + 1 {
-
-						passed_chars := 0
-						passed_lines := 0
-
-						// H line TOP+BOTTOM
-						passed_chars = 0
-						for i := range w {
-							if (*char_table)[y][x+h+i] == '_' && (*char_table)[y+h+h][x+h+i] == '_' {
-								passed_chars++
-							}
-						}
-						if passed_chars == w {
-							passed_lines += 2
-						}
-
-						// DIAG line LEFT TOP+BOTTOM
-						passed_chars = 0
-						for i := range h {
-							if (*char_table)[y+h-i][x+i] == '/' && (*char_table)[y+h+i+1][x+i] == '\\' {
-								passed_chars++
-							}
-						}
-						if passed_chars == h {
-							passed_lines += 2
-						}
-
-						// DIAG line RIGHT BOTTOM+TOP
-						passed_chars = 0
-						for i := range h {
-							if (*char_table)[y+h+h-i][x+h+i+w] == '/' && (*char_table)[y+1+i][x+h+i+w] == '\\' {
-								passed_chars++
-							}
-						}
-						if passed_chars == h {
-							passed_lines += 2
-						}
-
-						if passed_lines == 6 {
-
-							log.Printf("found hex(%dx%d) at point(%d;%d)", h, w, y, x)
-							if y%(1+h+h) == 0 && x%(h+w+h+w) == 0 {
-								first_hex_skipped = false
-							} else {
-								first_hex_skipped = true
-							}
-
-							height = h
-							width = w
-							break MAIN_LOOP
-						}
-					}
-				}
-			}
-		}
-	}
-
-	if height == 0 && width == 0 {
-		log.Printf("hex size not found!")
-	} else {
-		log.Printf("h==%d w==%d hex size found", height, width)
-	}
-
-	return first_hex_skipped, height, width
-
 }

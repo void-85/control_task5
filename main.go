@@ -32,6 +32,8 @@ var (
 
 func main() {
 
+	failed_tests_names := ""
+
 	log.Printf("\033[33m[ STARTED ]")
 
 	test_input_files, err := filepath.Glob(filepath.Join(test_dir, "*"))
@@ -90,6 +92,8 @@ func main() {
 
 		if actual_output != expected_output {
 
+			failed_tests_names += fmt.Sprintf("failed: %s\n", in_file)
+
 			actual_output_splitted := strings.Split(actual_output, "\n")
 			expected_output_splitted := strings.Split(string(output), "\n")
 
@@ -134,6 +138,7 @@ func main() {
 
 	log.Printf("\033[33m[ FINISHED ]\n\n")
 	log.Printf("TESTS : %d / %d passed", tests_passed, tests_total)
+	log.Printf("%s", failed_tests_names)
 }
 
 func test_func() {

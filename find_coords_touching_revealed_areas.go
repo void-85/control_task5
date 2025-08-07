@@ -1,5 +1,7 @@
 package main
 
+import "log"
+
 func find_coords_touching_revealed_areas(
 	t *[][]byte,
 	bt *[][]int,
@@ -83,7 +85,40 @@ func validate_touch_position(
 ) {
 
 	if validate_in_boundaries_positon(table_height, table_width, check_y, check_x) {
+		if (*t)[check_y][check_x] == 'G' ||
+			(*t)[check_y][check_x] == '~' {
 
+			deltas := []delta{
+				{-2, +0},
+				{+2, +0},
+				{-1, -1},
+				{-1, +1},
+				{+1, -1},
+				{+1, +1},
+			}
+			for _, delta := range deltas {
+				if validate_in_boundaries_positon(table_height, table_width, check_y+delta.y, check_x+delta.x) {
+					if (*t)[check_y+delta.y][check_x+delta.x] == '*' {
+
+						if (*t)[check_y][check_x] == 'G' {
+							replace_what = 'G'
+						} else {
+							replace_what = '~'
+						}
+
+						log.Printf(
+							"FOUND REVEALED AREAS TOUCHING COORD at (%d;%d) with NEIGHBOR CROSSED BORDERS==%d",
+							check_y+delta.y,
+							check_x+delta.x,
+							(*bt)[check_y+delta.y][check_x+delta.x],
+						)
+						return true, (*bt)[check_y+delta.y][check_x+delta.x]
+
+					}
+				}
+			}
+
+		}
 	}
 
 	return false, -1

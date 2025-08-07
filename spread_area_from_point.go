@@ -88,7 +88,7 @@ func spread_area_from_point(
 
 			case replace_what:
 
-				//(*table)[from_y][from_x] = replace_with
+				(*table)[from_y][from_x] = replace_with
 				(*borders_table)[from_y][from_x] = current_element_borders_reached
 
 				log.Printf(

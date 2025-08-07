@@ -256,6 +256,8 @@ DATASETS_LOOP:
 
 		table[spread_start_y][spread_start_x] = 'G'
 		borders_table[spread_start_y][spread_start_x] = 0
+		replace_what = 'G'
+		replace_with = '*'
 		already_sailed = false
 		element_borders_reached = 0
 

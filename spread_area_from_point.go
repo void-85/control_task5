@@ -6,8 +6,9 @@ type delta struct {
 }
 
 func spread_area_from_point_helper(
-	table *[][]byte,
-	borders_table *[][]int,
+	t *[][]byte,
+	bt *[][]int,
+	vt *[][]bool,
 	table_height,
 	table_width,
 	from_y,
@@ -32,9 +33,11 @@ func spread_area_from_point_helper(
 		for _, delta := range deltas {
 
 			if !destination_found {
+
 				spread_area_from_point(
-					table,
-					borders_table,
+					t,
+					bt,
+					vt,
 					table_height,
 					table_width,
 					from_y+delta.y,
@@ -47,8 +50,9 @@ func spread_area_from_point_helper(
 }
 
 func spread_area_from_point(
-	table *[][]byte,
-	borders_table *[][]int,
+	t *[][]byte,
+	bt *[][]int,
+	vt *[][]bool,
 	table_height,
 	table_width,
 	from_y,
@@ -62,8 +66,9 @@ func spread_area_from_point(
 
 			if !already_sailed {
 				go_sailing_spread_from_border(
-					table,
-					borders_table,
+					t,
+					bt,
+					vt,
 					table_height,
 					table_width,
 					current_element_borders_reached,
@@ -71,59 +76,52 @@ func spread_area_from_point(
 			}
 		} else {
 
-			switch (*table)[from_y][from_x] {
-			case 'X':
+			if !(*vt)[from_y][from_x] {
 
-				element_borders_reached = current_element_borders_reached
-				if replace_what == '~' {
-					//log.Printf("FOUND DESTINATION FROM WATER!!!")
-					element_borders_reached++
+				switch (*t)[from_y][from_x] {
+				case 'X':
+
+					element_borders_reached = current_element_borders_reached
+					if replace_what == '~' {
+						//log.Printf("FOUND DESTINATION FROM WATER!!!")
+						element_borders_reached++
+					}
+					destination_found = true
+					/* 				//log.Printf(
+					"######################\nDESTINATION FOUND at (%d;%d)!!!",
+					from_y, from_x) */
+
+				case replace_what:
+
+					(*t)[from_y][from_x] = replace_with
+					(*bt)[from_y][from_x] = current_element_borders_reached
+
+					(*vt)[from_y][from_x] = true
+
+					spread_area_from_point_helper(
+						t,
+						bt,
+						vt,
+						table_height,
+						table_width,
+						from_y,
+						from_x,
+						current_element_borders_reached,
+					)
+
+				default:
 				}
-				destination_found = true
-				/* 				//log.Printf(
-				"######################\nDESTINATION FOUND at (%d;%d)!!!",
-				from_y, from_x) */
 
-			case replace_what:
-
-				(*table)[from_y][from_x] = replace_with
-				(*borders_table)[from_y][from_x] = current_element_borders_reached
-
-				/* 				//log.Printf(
-					"replaced %c -> %c at (%d;%d):",
-					replace_what,
-					replace_with,
-					from_y,
-					from_x,
-				) */
-				//print_table(table, table_height, table_width)
-
-				spread_area_from_point_helper(
-					table,
-					borders_table,
-					table_height,
-					table_width,
-					from_y,
-					from_x,
-					current_element_borders_reached,
-				)
-
-			default:
-
-				/*if (*table)[check_y][check_x] != replace_with &&
-					(*table)[check_y][check_x] != ' ' {
-					spread_start_y = check_y
-					spread_start_x = check_x
-					//log.Printf("### spread_start set to (%d;%d)", spread_start_y, spread_start_x)
-				}*/
+				(*vt)[from_y][from_x] = true
 			}
 		}
 	}
 }
 
 func go_sailing_spread_from_border(
-	table *[][]byte,
-	borders_table *[][]int,
+	t *[][]byte,
+	bt *[][]int,
+	vt *[][]bool,
 	table_height,
 	table_width,
 	current_element_borders_reached int,
@@ -141,16 +139,19 @@ func go_sailing_spread_from_border(
 				if i == 0 || j == 0 ||
 					i == table_height-1 || j == table_width-1 ||
 					(i == 1) {
-					if (*table)[i][j] == '~' {
+					if (*t)[i][j] == '~' && !(*vt)[i][j] {
 						spread_area_from_point_helper(
-							table,
-							borders_table,
+							t,
+							bt,
+							vt,
 							table_height,
 							table_width,
 							i,
 							j,
 							current_element_borders_reached,
 						)
+
+						(*vt)[i][j] = true
 					}
 				}
 

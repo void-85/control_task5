@@ -235,6 +235,12 @@ DATASETS_LOOP:
 			borders_table[i] = make([]int, table_width)
 		}
 
+		visited_table := make([][]bool, table_height)
+		for i := range table_height {
+			visited_table[i] = make([]bool, table_width)
+		}
+		reset_visited_table(&visited_table, table_height, table_width)
+
 		destination_found,
 			spread_start_y,
 			spread_start_x =
@@ -271,9 +277,11 @@ DATASETS_LOOP:
 
 		//print_table(&table, &borders_table, table_height, table_width)
 
+		//reset_visited_table(&visited_table, table_height, table_width)
 		spread_area_from_point_helper(
 			&table,
 			&borders_table,
+			&visited_table,
 			table_height,
 			table_width,
 			spread_start_y,
@@ -282,21 +290,25 @@ DATASETS_LOOP:
 
 		for !destination_found {
 
+			reset_visited_table(&visited_table, table_height, table_width)
 			spread_start_y,
 				spread_start_x,
 				element_borders_reached =
 				find_coords_touching_revealed_areas(
 					&table,
 					&borders_table,
+					&visited_table,
 					table_height,
 					table_width,
 					spread_start_y,
 					spread_start_x,
 				)
 
+			reset_visited_table(&visited_table, table_height, table_width)
 			spread_area_from_point_helper(
 				&table,
 				&borders_table,
+				&visited_table,
 				table_height,
 				table_width,
 				spread_start_y,
@@ -370,3 +382,13 @@ DATASETS_LOOP:
 		replace_what = '_'
 	}
 } */
+
+func reset_visited_table(vt *[][]bool, table_height, table_width int) {
+
+	for i := range table_height {
+		for j := range table_width {
+			(*vt)[i][j] = false
+		}
+	}
+
+}

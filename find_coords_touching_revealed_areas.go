@@ -3,6 +3,7 @@ package main
 func find_coords_touching_revealed_areas(
 	t *[][]byte,
 	bt *[][]int,
+	vt *[][]bool,
 	table_height,
 	table_width,
 	start_y,
@@ -15,57 +16,86 @@ func find_coords_touching_revealed_areas(
 
 	found_y, found_x, neighbor_element_borders_reached = -1, -1, -1
 
-	max_diag := table_height
-	if max_diag < table_width {
-		max_diag = table_width
-	}
+	/* 	max_diag := table_height
+	   	if max_diag < table_width {
+	   		max_diag = table_width
+	   	} */
 
 	var found bool
-	for step := range max_diag {
+
+	for y := range table_height {
+		for x := range table_width {
+
+			if !(*vt)[y][x] {
+
+				found,
+					neighbor_element_borders_reached =
+					validate_touch_position(t, bt, vt, table_height, table_width, y, x)
+
+				(*vt)[y][x] = true
+
+				if found {
+					return y, x, neighbor_element_borders_reached + 1
+				}
+
+			}
+
+		}
+	}
+
+	/* for step := range max_diag {
 
 		for x := start_x - step; x <= start_x+step; x++ {
 
 			y := start_y - step
-			found,
-				neighbor_element_borders_reached =
-				validate_touch_position(t, bt, table_height, table_width, y, x)
+			if validate_in_boundaries_positon(table_height, table_width, y, x) {
+				found,
+					neighbor_element_borders_reached =
+					validate_touch_position(t, bt, vt, table_height, table_width, y, x)
 
-			if found {
-				return y, x, neighbor_element_borders_reached + 1
+				if found {
+					return y, x, neighbor_element_borders_reached + 1
+				}
 			}
 
 			y = start_y + step
-			found,
-				neighbor_element_borders_reached =
-				validate_touch_position(t, bt, table_height, table_width, y, x)
+			if validate_in_boundaries_positon(table_height, table_width, y, x) {
+				found,
+					neighbor_element_borders_reached =
+					validate_touch_position(t, bt, vt, table_height, table_width, y, x)
 
-			if found {
-				return y, x, neighbor_element_borders_reached + 1
+				if found {
+					return y, x, neighbor_element_borders_reached + 1
+				}
 			}
 		}
 
 		for y := start_y - step + 1; y <= start_y+step-1; y++ {
 
 			x := start_x - step
-			found,
-				neighbor_element_borders_reached =
-				validate_touch_position(t, bt, table_height, table_width, y, x)
+			if validate_in_boundaries_positon(table_height, table_width, y, x) {
+				found,
+					neighbor_element_borders_reached =
+					validate_touch_position(t, bt, vt, table_height, table_width, y, x)
 
-			if found {
-				return y, x, neighbor_element_borders_reached + 1
+				if found {
+					return y, x, neighbor_element_borders_reached + 1
+				}
 			}
 
 			x = start_x + step
-			found,
-				neighbor_element_borders_reached =
-				validate_touch_position(t, bt, table_height, table_width, y, x)
+			if validate_in_boundaries_positon(table_height, table_width, y, x) {
+				found,
+					neighbor_element_borders_reached =
+					validate_touch_position(t, bt, vt, table_height, table_width, y, x)
 
-			if found {
-				return y, x, neighbor_element_borders_reached + 1
+				if found {
+					return y, x, neighbor_element_borders_reached + 1
+				}
 			}
 		}
 
-	}
+	} */
 
 	return found_y, found_x, neighbor_element_borders_reached
 }
@@ -73,6 +103,7 @@ func find_coords_touching_revealed_areas(
 func validate_touch_position(
 	t *[][]byte,
 	bt *[][]int,
+	vt *[][]bool,
 	table_height,
 	table_width,
 	check_y,
@@ -82,7 +113,10 @@ func validate_touch_position(
 	neighbor_element_borders_reached int,
 ) {
 
-	if validate_in_boundaries_positon(table_height, table_width, check_y, check_x) {
+	//if validate_in_boundaries_positon(table_height, table_width, check_y, check_x) {
+
+	if !(*vt)[check_y][check_x] {
+
 		if (*t)[check_y][check_x] == 'G' ||
 			(*t)[check_y][check_x] == '~' {
 
@@ -96,6 +130,9 @@ func validate_touch_position(
 			}
 			for _, delta := range deltas {
 				if validate_in_boundaries_positon(table_height, table_width, check_y+delta.y, check_x+delta.x) {
+
+					//if
+
 					if (*t)[check_y+delta.y][check_x+delta.x] == '*' {
 
 						if (*t)[check_y][check_x] == 'G' {
@@ -113,11 +150,15 @@ func validate_touch_position(
 						return true, (*bt)[check_y+delta.y][check_x+delta.x]
 
 					}
+
 				}
 			}
 
 		}
+
+		(*vt)[check_y][check_x] = true
 	}
+	//}
 
 	return false, -1
 }

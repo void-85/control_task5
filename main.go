@@ -10,6 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"net/http"
+	_ "net/http/pprof"
 )
 
 const (
@@ -30,6 +33,10 @@ var (
 )
 
 func main() {
+
+	go func() {
+		http.ListenAndServe("localhost:6060", nil)
+	}()
 
 	failed_tests_names := ""
 

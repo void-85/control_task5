@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -100,12 +101,12 @@ func main() {
 
 			failed_tests_names += fmt.Sprintf("failed: %s\n", in_file)
 
-			//actual_output_splitted := strings.Split(actual_output, "\n")
-			//expected_output_splitted := strings.Split(string(output), "\n")
+			actual_output_splitted := strings.Split(actual_output, "\n")
+			expected_output_splitted := strings.Split(string(output), "\n")
 
 			log.Printf("\033[31mFAILED %s (worked %s)\033[34m", in_file, time_elapsed)
-			//log.Printf("\033[35mEXP\tACT\tLINE #\033[34m")
-			/* for i := range int(math.Max(float64(len(actual_output_splitted)), float64(len(expected_output_splitted)))) {
+			log.Printf("\033[35mEXP\tACT\tLINE #\033[34m")
+			for i := range int(math.Max(float64(len(actual_output_splitted)), float64(len(expected_output_splitted)))) {
 
 				a, b, color := "", "", ""
 				if i < len(expected_output_splitted) {
@@ -122,18 +123,18 @@ func main() {
 				}
 
 				if a != "" && b != "" {
-					//log.Printf("%s%s\t%s\t(#%d)\033[34m", color, a, b, i+1)
+					log.Printf("%s%s\t%s\t(#%d)\033[34m", color, a, b, i+1)
 				}
-			} */
+			}
 
-			/* if len(actual_output_splitted) == len(expected_output_splitted) {
-				//log.Printf("\n\033[31mFAILED %s (worked %s):", time_elapsed)
+			if len(actual_output_splitted) == len(expected_output_splitted) {
+				log.Printf("\n\033[31mFAILED %s (worked %s):", time_elapsed)
 				for i := range len(actual_output_splitted) {
-					//log.Printf("%s\t\t<-must be--\t\t%s", actual_output_splitted[i], expected_output_splitted[i])
+					log.Printf("%s\t\t<-must be--\t\t%s", actual_output_splitted[i], expected_output_splitted[i])
 				}
 			} else {
-				//log.Printf("\n\033[31mFAILED %s (worked %s)\nExpected:\n%s\nGot:\n%s\n", in_file, time_elapsed, expected_output, actual_output)
-			} */
+				log.Printf("\n\033[31mFAILED %s (worked %s)\nExpected:\n%s\nGot:\n%s\n", in_file, time_elapsed, expected_output, actual_output)
+			}
 
 		} else {
 			tests_passed++
@@ -213,7 +214,7 @@ DATASETS_LOOP:
 
 		if y1 == y2 && x1 == x2 {
 			//log.Printf("same coords inside same hex, breaking dataset computations...")
-			fmt.Fprintf(out, "0\n")
+			fmt.Fprintf(out, "YES\n")
 			continue DATASETS_LOOP
 		}
 
@@ -235,11 +236,6 @@ DATASETS_LOOP:
 			for j := range table_width {
 				table[i][j] = ' '
 			}
-		}
-
-		borders_table := make([][]int, table_height)
-		for i := range table_height {
-			borders_table[i] = make([]int, table_width)
 		}
 
 		visited_table := make([][]bool, table_height)
@@ -265,7 +261,7 @@ DATASETS_LOOP:
 
 		if destination_found {
 			//log.Printf("src & dst inside same hex, breaking dataset computations...")
-			fmt.Fprintf(out, "0\n")
+			fmt.Fprintf(out, "YES\n")
 			continue DATASETS_LOOP
 		}
 
@@ -276,7 +272,6 @@ DATASETS_LOOP:
 		) */
 
 		table[spread_start_y][spread_start_x] = 'G'
-		borders_table[spread_start_y][spread_start_x] = 0
 		replace_what = 'G'
 		replace_with = '*'
 		already_sailed = false
@@ -287,108 +282,20 @@ DATASETS_LOOP:
 		//reset_visited_table(&visited_table, table_height, table_width)
 		spread_area_from_point_helper(
 			&table,
-			&borders_table,
 			&visited_table,
 			table_height,
 			table_width,
 			spread_start_y,
 			spread_start_x,
-			element_borders_reached)
+		)
 
-		for !destination_found {
-
-			reset_visited_table(&visited_table, table_height, table_width)
-			spread_start_y,
-				spread_start_x,
-				element_borders_reached =
-				find_coords_touching_revealed_areas(
-					&table,
-					&borders_table,
-					&visited_table,
-					table_height,
-					table_width,
-					spread_start_y,
-					spread_start_x,
-				)
-
-			reset_visited_table(&visited_table, table_height, table_width)
-			spread_area_from_point_helper(
-				&table,
-				&borders_table,
-				&visited_table,
-				table_height,
-				table_width,
-				spread_start_y,
-				spread_start_x,
-				element_borders_reached)
-
-			//log.Printf("iteration passed")
-			//print_table(&table, &borders_table, table_height, table_width)
-
+		if destination_found {
+			fmt.Fprintf(out, "YES\n")
+		} else {
+			fmt.Fprintf(out, "NO\n")
 		}
-
-		//print_table(&table, &borders_table, table_height, table_width)
-
-		/*
-			// destination_found is FALSE from "map_hex_table" func
-			already_sailed = false
-			element_borders_reached = 0
-			replace_what = 'G'
-			replace_with = '*'
-
-			for !destination_found {
-
-				spread_from_point(
-					&table,
-					table_height,
-					table_width,
-					spread_start_y,
-					spread_start_x,
-				)
-
-				switch replace_what {
-				case 'G':
-					replace_what = '~'
-				case '~':
-					replace_what = 'G'
-				default:
-					replace_what = '_'
-				}
-
-				//log.Printf("CHANGED : NOW replacing %c -> %c", replace_what, replace_with)
-
-				if !destination_found {
-					element_borders_reached++
-
-					//log.Printf(
-						"at current table state INCREASING 'element_borders_reached' to %d\n#########################\n",
-						element_borders_reached)
-
-					print_table(&table, table_height, table_width)
-					//log.Printf("\n#########################\n")
-
-					if element_borders_reached > 200 {
-						//log.Printf("ERROR !!! ERROR !!! ERROR !!! ERROR !!! ERROR !!! ERROR !!!")
-						//log.Printf("too much borders crossed, possibly error! check!")
-						break DATASETS_LOOP
-					}
-				}
-			} */
-
-		fmt.Fprintf(out, "%d\n", element_borders_reached)
 	}
 }
-
-/* func switch_replacing_what_with() {
-	switch replace_what {
-	case 'G':
-		replace_what = '~'
-	case '~':
-		replace_what = 'G'
-	default:
-		replace_what = '_'
-	}
-} */
 
 func reset_visited_table(vt *[][]bool, table_height, table_width int) {
 

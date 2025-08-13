@@ -11,9 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"net/http"
-	_ "net/http/pprof"
 )
 
 const (
@@ -21,23 +18,17 @@ const (
 )
 
 var (
-	already_sailed               = false
-	destination_found            = false
-	spread_start_y               = -1
-	spread_start_x               = -1
-	element_borders_reached      = 0
-	replace_what            byte = '_'
-	replace_with            byte = '_'
+	destination_found      = false
+	spread_start_y         = -1
+	spread_start_x         = -1
+	replace_what      byte = '_'
+	replace_with      byte = '_'
 
 	tests_passed = 0
 	tests_total  = 0
 )
 
 func main() {
-
-	go func() {
-		http.ListenAndServe("localhost:6060", nil)
-	}()
 
 	failed_tests_names := ""
 
@@ -274,8 +265,6 @@ DATASETS_LOOP:
 		table[spread_start_y][spread_start_x] = 'G'
 		replace_what = 'G'
 		replace_with = '*'
-		already_sailed = false
-		element_borders_reached = 0
 
 		//print_table(&table, &borders_table, table_height, table_width)
 
